@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тренажер Множення</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap');
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: #f0f9ff;
+            touch-action: manipulation;
+        }
+        .card {
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+        }
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+    <div id="app" class="w-full max-w-md bg-white rounded-3xl card p-6 text-center">
+        <!-- Екран ПРИВІТАННЯ -->
+        <div id="start-screen" class="space-y-6">
+            <h1 class="text-3xl font-black text-blue-600">Привіт, маленька зірочко! ✨</h1>
+            <p class="text-gray-600 text-lg">Скільки прикладів на множення хочеш розв'язати сьогодні?</p>
+            
+            <div class="flex flex-col items-center gap-4">
+                <input type="number" id="question-count" value="5" min="1" max="50" 
+                    class="w-24 text-center text-3xl font-bold p-3 border-4 border-blue-200 rounded-2xl focus:border-blue-500 outline-none transition-all">
+                
+                <button onclick="initGame()" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-2xl text-xl shadow-lg transform active:scale-95 transition-all">
+                    Почати гру! 🚀
+                </button>
+            </div>
+        </div>
+
+        <!-- Екран ГРИ -->
+        <div id="game-screen" class="hidden space-y-8">
+            <div class="flex justify-between items-center text-sm font-bold text-gray-400 uppercase tracking-widest">
+                <span>Приклад <span id="current-number">1</span> з <span id="total-count-display">0</span></span>
+            </div>
+
+            <div class="py-10">
+                <div class="text-6xl font-black text-gray-800 mb-8 select-none">
+                    <span id="val-a">0</span> × <span id="val-b">0</span> = ?
+                </div>
+                
+                <!-- Додано inputmode="numeric" для виклику цифрової клавіатури на телефонах -->
+                <input type="number" id="answer-input" placeholder="..." 
+                    inputmode="numeric"
+                    class="w-full text-center text-5xl font-black p-4 bg-gray-50 border-b-8 border-blue-400 rounded-2xl focus:bg-white outline-none transition-all"
+                    autofocus>
+            </div>
+
+            <button onclick="submitAnswer()" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-8 rounded-2xl text-xl shadow-lg transform active:scale-95 transition-all">
+                Далі ➔
+            </button>
+        </div>
+
+        <!-- Екран РЕЗУЛЬТАТІВ -->
+        <div id="result-screen" class="hidden space-y-6">
+            <h2 class="text-3xl font-black text-gray-800">Твій результат! 🏆</h2>
+            
+            <div class="flex justify-around py-4 bg-gray-50 rounded-2xl">
+                <div>
+                    <div class="text-3xl font-black text-green-500" id="correct-count">0</div>
+                    <div class="text-xs uppercase font-bold text-gray-400">Вірно</div>
+                </div>
+                <div class="h-10 w-px bg-gray-200"></div>
+                <div>
+                    <div class="text-3xl font-black text-red-500" id="wrong-count">0</div>
+                    <div class="text-xs uppercase font-bold text-gray-400">Помилки</div>
+                </div>
+            </div>
+
+            <div id="results-list" class="space-y-2 max-h-64 overflow-y-auto pr-2 text-left">
+                <!-- Сюди додаються приклади -->
+            </div>
+
+            <div class="flex flex-col gap-3">
+                <button id="retry-errors-btn" onclick="retryErrors()" class="hidden w-full bg-orange-400 hover:bg-orange-500 text-white font-bold py-4 px-4 rounded-2xl shadow-md transition-all">
+                    Перевирішити помилки 🔄
+                </button>
+                <button onclick="resetToHome()" class="w-full bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-4 px-4 rounded-2xl transition-all">
+                    На головний екран 🏠
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let questions = [];
+        let currentIndex = 0;
+
+        function showScreen(screenId) {
+            ['start-screen', 'game-screen', 'result-screen'].forEach(id => {
+                document.getElementById(id).classList.add('hidden');
+            });
+            document.getElementById(screenId).classList.remove('hidden');
+        }
+
+        function resetToHome() {
+            questions = [];
+            currentIndex = 0;
+            showScreen('start-screen');
+        }
+
+        function initGame() {
+            const countInput = document.getElementById('question-count');
+            const count = parseInt(countInput.value) || 5;
+            questions = [];
+            for (let i = 0; i < count; i++) {
+                questions.push({
+                    a: Math.floor(Math.random() * 9) + 2, 
+                    b: Math.floor(Math.random() * 9) + 2,
+                    userAnswer: null,
+                    isCorrect: false
+                });
+            }
+            startPhase();
+        }
+
+        function startPhase() {
+            currentIndex = 0;
+            updateGameUI();
+            showScreen('game-screen');
+            // Фокус на інпут після зміни екрану
+            setTimeout(() => {
+                document.getElementById('answer-input').focus();
+            }, 100);
+        }
+
+        function updateGameUI() {
+            const q = questions[currentIndex];
+            document.getElementById('val-a').innerText = q.a;
+            document.getElementById('val-b').innerText = q.b;
+            document.getElementById('current-number').innerText = currentIndex + 1;
+            document.getElementById('total-count-display').innerText = questions.length;
+            document.getElementById('answer-input').value = '';
+        }
+
+        function submitAnswer() {
+            const input = document.getElementById('answer-input');
+            const val = parseInt(input.value);
+            
+            if (isNaN(val)) return;
+
+            const q = questions[currentIndex];
+            q.userAnswer = val;
+            q.isCorrect = (val === q.a * q.b);
+
+            if (currentIndex < questions.length - 1) {
+                currentIndex++;
+                updateGameUI();
+                input.focus();
+            } else {
+                showFinalResults();
+            }
+        }
+
+        function showFinalResults() {
+            const list = document.getElementById('results-list');
+            list.innerHTML = '';
+            
+            let correct = 0;
+            let wrong = 0;
+
+            questions.forEach((q) => {
+                if (q.isCorrect) correct++; else wrong++;
+
+                const item = document.createElement('div');
+                item.className = `flex justify-between items-center p-3 rounded-xl ${q.isCorrect ? 'bg-green-50' : 'bg-red-50'}`;
+                item.innerHTML = `
+                    <div class="font-bold text-lg">
+                        ${q.a} × ${q.b} = <span class="${q.isCorrect ? 'text-green-600' : 'text-red-600'}">${q.userAnswer}</span>
+                        ${!q.isCorrect ? `<span class="text-gray-400 text-sm ml-2 font-normal">(правильно: ${q.a * q.b})</span>` : ''}
+                    </div>
+                    <div>${q.isCorrect ? '✅' : '❌'}</div>
+                `;
+                list.appendChild(item);
+            });
+
+            document.getElementById('correct-count').innerText = correct;
+            document.getElementById('wrong-count').innerText = wrong;
+            
+            const retryBtn = document.getElementById('retry-errors-btn');
+            if (wrong > 0) {
+                retryBtn.classList.remove('hidden');
+            } else {
+                retryBtn.classList.add('hidden');
+            }
+
+            showScreen('result-screen');
+        }
+
+        function retryErrors() {
+            const errorQuestions = questions.filter(q => !q.isCorrect);
+            questions = errorQuestions.map(q => ({
+                a: q.a,
+                b: q.b,
+                userAnswer: null,
+                isCorrect: false
+            }));
+            startPhase();
+        }
+
+        document.getElementById('answer-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                submitAnswer();
+            }
+        });
+    </script>
+</body>
+</html>
