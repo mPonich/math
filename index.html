@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Тренажер Множення + Хмарне Збереження</title>
+    <title>Тренажер Множення ✨</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap');
@@ -36,7 +36,7 @@
         <!-- Екран ПРИВІТАННЯ -->
         <div id="start-screen" class="space-y-6">
             <h1 class="text-3xl font-black text-blue-600">Привіт! ✨</h1>
-            <p class="text-gray-600 text-lg">Готовий до нових рекордів?</p>
+            <p class="text-gray-600 text-lg">Скільки прикладів розв'яжемо?</p>
             
             <div class="flex flex-col items-center gap-4">
                 <div class="w-full">
@@ -45,11 +45,11 @@
                         class="w-full text-center text-3xl font-bold p-3 border-4 border-blue-200 rounded-2xl focus:border-blue-500 outline-none transition-all">
                 </div>
                 
-                <button onclick="initGame()" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-2xl text-xl shadow-lg transform active:scale-95 transition-all">
+                <button onclick="window.initGame()" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-2xl text-xl shadow-lg transform active:scale-95 transition-all">
                     Почати гру! 🚀
                 </button>
 
-                <button onclick="toggleHistory()" class="text-blue-400 font-bold text-sm hover:underline">
+                <button onclick="window.toggleHistory()" id="history-btn" class="text-blue-400 font-bold text-sm hover:underline">
                     Подивитися історію занять 📜
                 </button>
             </div>
@@ -72,7 +72,7 @@
                     autofocus>
             </div>
 
-            <button onclick="submitAnswer()" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-8 rounded-2xl text-xl shadow-lg transform active:scale-95 transition-all">
+            <button onclick="window.submitAnswer()" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-8 rounded-2xl text-xl shadow-lg transform active:scale-95 transition-all">
                 Далі ➔
             </button>
         </div>
@@ -94,14 +94,14 @@
             </div>
 
             <div id="results-list" class="space-y-2 max-h-64 overflow-y-auto pr-2 text-left custom-scrollbar">
-                <!-- Сюди додаються приклади -->
+                <!-- Сюди додаються результати сесії -->
             </div>
 
             <div class="flex flex-col gap-3">
-                <button id="retry-errors-btn" onclick="retryErrors()" class="hidden w-full bg-orange-400 hover:bg-orange-500 text-white font-bold py-4 px-4 rounded-2xl shadow-md transition-all">
+                <button id="retry-errors-btn" onclick="window.retryErrors()" class="hidden w-full bg-orange-400 hover:bg-orange-500 text-white font-bold py-4 px-4 rounded-2xl shadow-md transition-all">
                     Виправити помилки 🔄
                 </button>
-                <button onclick="resetToHome()" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold py-4 px-4 rounded-2xl transition-all">
+                <button onclick="window.resetToHome()" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold py-4 px-4 rounded-2xl transition-all">
                     На головний екран 🏠
                 </button>
             </div>
@@ -111,9 +111,9 @@
         <div id="history-screen" class="hidden space-y-6">
             <h2 class="text-2xl font-black text-gray-800">Історія занять 📅</h2>
             <div id="history-container" class="space-y-3 max-h-96 overflow-y-auto pr-2 text-left custom-scrollbar">
-                <p class="text-gray-400 text-center py-10">Завантаження історії...</p>
+                <p class="text-gray-400 text-center py-10">Завантаження...</p>
             </div>
-            <button onclick="showScreen('start-screen')" class="w-full bg-gray-100 text-gray-600 font-bold py-4 rounded-2xl">
+            <button onclick="window.showScreen('start-screen')" class="w-full bg-gray-100 text-gray-600 font-bold py-4 rounded-2xl">
                 Назад
             </button>
         </div>
@@ -122,69 +122,63 @@
     <!-- Firebase SDK -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, doc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, limit } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Firebase Config
-        const firebaseConfig = JSON.parse(__firebase_config);
+        // Ваші дані Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyDZD-X9l_-8Pu9ir5mP6q9jaezKHo19E1U",
+            authDomain: "math-trainer-a89d8.firebaseapp.com",
+            projectId: "math-trainer-a89d8",
+            storageBucket: "math-trainer-a89d8.firebasestorage.app",
+            messagingSenderId: "576769138792",
+            appId: "1:576769138792:web:a88c8f9e0f1d6aa8e21bdd"
+        };
+
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'math-trainer-v1';
+        const appId = "math-trainer-v1"; // ID для шляху в базі
 
         let user = null;
         let questions = [];
         let currentIndex = 0;
 
-        // AUTH
-        const initAuth = async () => {
-            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                await signInWithCustomToken(auth, __initial_auth_token);
-            } else {
-                await signInAnonymously(auth);
-            }
-        };
-        initAuth();
+        // Авторизація
+        signInAnonymously(auth).catch(err => console.error("Помилка входу:", err));
+        onAuthStateChanged(auth, (u) => { user = u; });
 
-        onAuthStateChanged(auth, (u) => {
-            user = u;
-            if (user) console.log("Авторизовано як:", user.uid);
-        });
-
-        // ЕКРАНИ
-        window.showScreen = (screenId) => {
-            ['start-screen', 'game-screen', 'result-screen', 'history-screen'].forEach(id => {
-                document.getElementById(id).classList.add('hidden');
+        // Навігація
+        window.showScreen = (id) => {
+            ['start-screen', 'game-screen', 'result-screen', 'history-screen'].forEach(s => {
+                document.getElementById(s).classList.add('hidden');
             });
-            document.getElementById(screenId).classList.remove('hidden');
+            document.getElementById(id).classList.remove('hidden');
         };
 
         window.resetToHome = () => {
             questions = [];
             currentIndex = 0;
-            showScreen('start-screen');
+            window.showScreen('start-screen');
         };
 
+        // Логіка гри
         window.initGame = () => {
             const count = parseInt(document.getElementById('question-count').value) || 5;
             questions = [];
             for (let i = 0; i < count; i++) {
                 questions.push({
-                    a: Math.floor(Math.random() * 9) + 2,
-                    b: Math.floor(Math.random() * 9) + 2,
+                    a: Math.floor(Math.random() * 8) + 2,
+                    b: Math.floor(Math.random() * 8) + 2,
                     userAnswer: null,
                     isCorrect: false
                 });
             }
-            startPhase();
-        };
-
-        function startPhase() {
             currentIndex = 0;
             updateGameUI();
-            showScreen('game-screen');
+            window.showScreen('game-screen');
             setTimeout(() => document.getElementById('answer-input').focus(), 100);
-        }
+        };
 
         function updateGameUI() {
             const q = questions[currentIndex];
@@ -209,23 +203,24 @@
                 updateGameUI();
                 input.focus();
             } else {
-                saveAndShowResults();
+                finishSession();
             }
         };
 
-        async function saveAndShowResults() {
+        async function finishSession() {
             let correct = 0;
             let wrong = 0;
             questions.forEach(q => q.isCorrect ? correct++ : wrong++);
 
-            // Відображення
-            renderResultsList(correct, wrong);
-            showScreen('result-screen');
+            // Показуємо результат
+            renderResults(correct, wrong);
+            window.showScreen('result-screen');
 
-            // Збереження в хмару
+            // Зберігаємо в базу (Firestore)
             if (user) {
                 try {
-                    const sessionData = {
+                    const sessionPath = collection(db, 'artifacts', appId, 'public', 'data', 'history');
+                    await addDoc(sessionPath, {
                         timestamp: Date.now(),
                         date: new Date().toLocaleDateString('uk-UA'),
                         time: new Date().toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' }),
@@ -236,94 +231,85 @@
                             eq: `${q.a}×${q.b}`,
                             ans: q.userAnswer,
                             ok: q.isCorrect,
-                            right: q.a * q.b
+                            res: q.a * q.b
                         }))
-                    };
-                    // Шлях: artifacts/{appId}/public/data/history
-                    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'history'), sessionData);
+                    });
                 } catch (e) {
-                    console.error("Помилка збереження:", e);
+                    console.error("Не вдалося зберегти в хмару:", e);
                 }
             }
         }
 
-        function renderResultsList(correct, wrong) {
+        function renderResults(c, w) {
             const list = document.getElementById('results-list');
             list.innerHTML = '';
-            questions.forEach((q) => {
-                const item = document.createElement('div');
-                item.className = `flex justify-between items-center p-3 rounded-xl mb-2 ${q.isCorrect ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`;
-                item.innerHTML = `
+            questions.forEach(q => {
+                const div = document.createElement('div');
+                div.className = `flex justify-between p-3 rounded-xl mb-2 ${q.isCorrect ? 'bg-green-50' : 'bg-red-50'}`;
+                div.innerHTML = `
                     <div class="font-bold">
                         ${q.a} × ${q.b} = ${q.userAnswer}
                         ${!q.isCorrect ? `<span class="text-xs block text-gray-400 font-normal">Правильно: ${q.a * q.b}</span>` : ''}
                     </div>
                     <div>${q.isCorrect ? '✅' : '❌'}</div>
                 `;
-                list.appendChild(item);
+                list.appendChild(div);
             });
-            document.getElementById('correct-count').innerText = correct;
-            document.getElementById('wrong-count').innerText = wrong;
-            document.getElementById('retry-errors-btn').classList.toggle('hidden', wrong === 0);
+            document.getElementById('correct-count').innerText = c;
+            document.getElementById('wrong-count').innerText = w;
+            document.getElementById('retry-errors-btn').classList.toggle('hidden', w === 0);
         }
 
         window.retryErrors = () => {
             questions = questions.filter(q => !q.isCorrect).map(q => ({
                 a: q.a, b: q.b, userAnswer: null, isCorrect: false
             }));
-            startPhase();
+            currentIndex = 0;
+            updateGameUI();
+            window.showScreen('game-screen');
         };
 
+        // Завантаження історії
         window.toggleHistory = () => {
-            showScreen('history-screen');
-            loadHistory();
-        };
-
-        function loadHistory() {
+            window.showScreen('history-screen');
             if (!user) return;
-            const container = document.getElementById('history-container');
-            const historyCol = collection(db, 'artifacts', appId, 'public', 'data', 'history');
             
-            onSnapshot(historyCol, (snapshot) => {
+            const container = document.getElementById('history-container');
+            const historyRef = collection(db, 'artifacts', appId, 'public', 'data', 'history');
+            
+            onSnapshot(historyRef, (snap) => {
                 container.innerHTML = '';
-                const docs = [];
-                snapshot.forEach(d => docs.push(d.data()));
-                
-                // Сортуємо в пам'яті (за правилом 2)
+                let docs = [];
+                snap.forEach(d => docs.push(d.data()));
                 docs.sort((a, b) => b.timestamp - a.timestamp);
 
                 if (docs.length === 0) {
-                    container.innerHTML = '<p class="text-gray-400 text-center py-10">Тут поки порожньо. Час розв\'язати перший приклад!</p>';
+                    container.innerHTML = '<p class="text-gray-400 text-center py-10">Тут поки порожньо</p>';
                     return;
                 }
 
                 docs.forEach(data => {
-                    const card = document.createElement('div');
-                    card.className = "bg-gray-50 p-4 rounded-2xl border border-gray-100";
-                    card.innerHTML = `
-                        <div class="flex justify-between items-start mb-2">
+                    const el = document.createElement('div');
+                    el.className = "bg-gray-50 p-4 rounded-2xl border border-gray-100";
+                    el.innerHTML = `
+                        <div class="flex justify-between items-start">
                             <div>
                                 <div class="font-black text-gray-800">${data.date}</div>
-                                <div class="text-xs text-gray-400 font-bold uppercase">${data.time}</div>
+                                <div class="text-[10px] text-gray-400 font-bold">${data.time}</div>
                             </div>
                             <div class="text-right">
-                                <div class="text-sm font-bold text-green-600">Вірно: ${data.correct}</div>
-                                <div class="text-sm font-bold text-red-500">Помилок: ${data.wrong}</div>
+                                <div class="text-sm font-bold text-green-600">✅ ${data.correct}</div>
+                                <div class="text-sm font-bold text-red-500">❌ ${data.wrong}</div>
                             </div>
                         </div>
-                        <div class="text-[10px] text-gray-400 leading-tight">
-                            ${data.details.map(d => `${d.eq}=${d.ans}${d.ok ? '✓' : '✗'}`).join(', ')}
-                        </div>
                     `;
-                    container.appendChild(card);
+                    container.appendChild(el);
                 });
-            }, (err) => {
-                container.innerHTML = `<p class="text-red-400 p-4">Помилка доступу: ${err.message}</p>`;
             });
-        }
+        };
 
         document.getElementById('answer-input').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') submitAnswer();
+            if (e.key === 'Enter') window.submitAnswer();
         });
     </script>
 </body>
